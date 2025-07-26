@@ -123,21 +123,47 @@
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: linear-gradient(45deg, #ff6b35, #f7931e);
             color: white;
             font-weight: 600;
             font-size: 0.9rem;
-            margin-top: 15px;
+            margin-top: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .delete-btn.cii {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
             box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
         }
 
-        .delete-btn:hover {
+        .delete-btn.cii:hover {
             background: linear-gradient(45deg, #e55a2b, #e8841a);
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .delete-btn.fuel {
+            background: linear-gradient(45deg, #9c27b0, #673ab7);
+            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+        }
+
+        .delete-btn.fuel:hover {
+            background: linear-gradient(45deg, #8e24aa, #5e35b1);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+        }
+
+        .delete-btn.ship {
+            background: linear-gradient(45deg, #e91e63, #ad1457);
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+        }
+
+        .delete-btn.ship:hover {
+            background: linear-gradient(45deg, #d81b60, #9c1249);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
         }
 
         .delete-btn:active {
@@ -267,6 +293,20 @@
             opacity: 0.8;
         }
 
+        .delete-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 15px;
+            padding-top: 15px;
+        }
+
+        .delete-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #bb86fc;
+            text-align: center;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 15px;
@@ -320,9 +360,21 @@
                 </div>
             </div>
             
-            <button class="delete-btn" id="deleteCiiBtn" onclick="deleteCiiData()">
-                🗑️ Delete Daily CII Data
-            </button>
+            <div class="delete-section">
+                <div class="delete-section-title">🗑️ Data Management</div>
+                
+                <button class="delete-btn cii" id="deleteCiiBtn" onclick="deleteCiiData()">
+                    🗃️ Delete Daily CII Data
+                </button>
+                
+                <button class="delete-btn fuel" id="deleteFuelBtn" onclick="deleteFuelData()">
+                    ⛽ Delete Fuel Data
+                </button>
+                
+                <button class="delete-btn ship" id="deleteShipBtn" onclick="deleteShipData()">
+                    🚢 Delete Ship Data
+                </button>
+            </div>
             
             <div id="deleteStatus" class="delete-status" style="display: none;"></div>
             
@@ -420,44 +472,74 @@
             }, hideDelay);
         }
 
-        // Delete CII Data function
-        async function deleteCiiData() {
-            const deleteBtn = document.getElementById('deleteCiiBtn');
+        // Generic delete function
+        async function performDelete(buttonId, url, dataType, icon) {
+            const deleteBtn = document.getElementById(buttonId);
             const originalContent = deleteBtn.innerHTML;
             
             // Show loading state
             deleteBtn.innerHTML = '<div class="loading"></div> Deleting...';
             deleteBtn.disabled = true;
             
-            showDeleteStatus('Deleting daily CII data...', 'info');
+            showDeleteStatus(`Deleting ${dataType}...`, 'info');
             
             try {
-                const deleteRes = await fetch('https://api-ais.agus-darmawan.com/api/v1/cii/daily/111111111', {
+                const deleteRes = await fetch(url, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                 });
                 
-                console.log('CII Delete response:', deleteRes);
+                console.log(`${dataType} Delete response:`, deleteRes);
                 
                 if (deleteRes.ok) {
                     const responseText = await deleteRes.text();
                     console.log('Delete response body:', responseText);
-                    showDeleteStatus(`✅ Successfully deleted CII data (Status: ${deleteRes.status})`, 'success');
+                    showDeleteStatus(`${icon} Successfully deleted ${dataType} (Status: ${deleteRes.status})`, 'success');
                 } else {
                     const errorText = await deleteRes.text().catch(() => 'Unknown error');
                     console.error('Delete failed:', deleteRes.status, errorText);
-                    showDeleteStatus(`❌ Failed to delete CII data (Status: ${deleteRes.status})`, 'error');
+                    showDeleteStatus(`❌ Failed to delete ${dataType} (Status: ${deleteRes.status})`, 'error');
                 }
             } catch (error) {
-                console.error('Network error during CII deletion:', error);
+                console.error(`Network error during ${dataType} deletion:`, error);
                 showDeleteStatus(`❌ Network error: ${error.message}`, 'error');
             } finally {
                 // Restore button
                 deleteBtn.innerHTML = originalContent;
                 deleteBtn.disabled = false;
             }
+        }
+
+        // Delete CII Data function
+        async function deleteCiiData() {
+            await performDelete(
+                'deleteCiiBtn',
+                'https://api-ais.agus-darmawan.com/api/v1/cii/daily/111111111',
+                'CII data',
+                '✅'
+            );
+        }
+
+        // Delete Fuel Data function
+        async function deleteFuelData() {
+            await performDelete(
+                'deleteFuelBtn',
+                'https://api-ais.agus-darmawan.com/api/v1/ships/fuel-data/111111111',
+                'fuel data',
+                '⛽'
+            );
+        }
+
+        // Delete Ship Data function
+        async function deleteShipData() {
+            await performDelete(
+                'deleteShipBtn',
+                'https://api-ais.agus-darmawan.com/api/v1/ships/data/mmsi/111111111',
+                'ship data',
+                '🚢'
+            );
         }
 
         function showError(message) {
@@ -533,7 +615,10 @@
         // Add some interactivity
         document.querySelectorAll('.mode-card').forEach(card => {
             card.addEventListener('click', function(e) {
-                if (!e.target.classList.contains('toggle-btn') && !e.target.closest('.toggle-btn')) {
+                if (!e.target.classList.contains('delete-btn') && 
+                    !e.target.classList.contains('toggle-btn') && 
+                    !e.target.closest('.delete-btn') && 
+                    !e.target.closest('.toggle-btn')) {
                     this.style.transform = 'scale(0.98)';
                     setTimeout(() => {
                         this.style.transform = '';
