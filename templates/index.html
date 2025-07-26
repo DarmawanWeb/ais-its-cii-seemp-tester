@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚢 AIS Simulator Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .mode-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .mode-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .mode-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .toggle-btn {
+            width: 80px;
+            height: 40px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .toggle-btn.inactive {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        .toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .toggle-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .delete-btn {
+            width: 100%;
+            height: 40px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .delete-btn:hover {
+            background: linear-gradient(45deg, #e55a2b, #e8841a);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.98);
+        }
+
+        .delete-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .delete-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .delete-status.success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+
+        .delete-status.error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+
+        .delete-status.info {
+            background: rgba(33, 150, 243, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            color: #2196F3;
+        }
+
+        .status-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border-left: 4px solid #bb86fc;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .status-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #bb86fc;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px 0;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.9);
+        }
+
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .mode-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status disconnected" id="connectionStatus">
+        🔴 Offline
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🚢 AIS Simulator</h1>
+            <p>Mobile Control Panel</p>
+        </div>
+
+        <!-- Mode 1 Card -->
+        <div class="mode-card">
+            <div class="mode-header">
+                <div class="mode-title">🕒 Mode 1</div>
+                <button class="toggle-btn inactive" id="mode1Toggle" onclick="toggleMode('mode1')">
+                    OFF
+                </button>
+            </div>
+            <div class="mode-subtitle">
+                Original GPS data with recorded time intervals<br>
+                MMSI: 111111111
+            </div>
+            <div class="status-info">
+                <div class="status-row">
+                    <span class="status-label">Status:</span>
+                    <span class="status-value" id="mode1Status">Inactive</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Points Sent:</span>
+                    <span class="status-value" id="mode1Counter">0</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Coordinates:</span>
+                    <span class="status-value">Original</span>
+                </div>
+            </div>
+            
+            <button class="delete-btn" id="deleteCiiBtn" onclick="deleteCiiData()">
+                🗑️ Delete Daily CII Data
+            </button>
+            
+            <div id="deleteStatus" class="delete-status" style="display: none;"></div>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </div>
+
+        <div class="footer">
+            <p>🌊 Navigate the Digital Seas</p>
+            <p style="font-size: 0.8rem; margin-top: 5px;">Built with ❤️ for Maritime Innovation</p>
+        </div>
+    </div>
+
+    <script>
+        let isOnline = false;
+
+        // Check server connection
+        async function checkConnection() {
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    isOnline = true;
+                    updateConnectionStatus(true);
+                } else {
+                    isOnline = false;
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                isOnline = false;
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.textContent = '🟢 Online';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = '🔴 Offline';
+                statusEl.className = 'connection-status disconnected';
+            }
+        }
+
+        // Update status display
+        async function updateStatus() {
+            if (!isOnline) return;
+            
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                // Update Mode 1 only
+                if (data.mode1) {
+                    updateModeDisplay('mode1', data.mode1);
+                }
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showError('Failed to update status');
+            }
+        }
+
+        function updateModeDisplay(mode, status) {
+            const toggleBtn = document.getElementById(`${mode}Toggle`);
+            const statusEl = document.getElementById(`${mode}Status`);
+            const counterEl = document.getElementById(`${mode}Counter`);
+            
+            if (!toggleBtn || !statusEl || !counterEl) return;
+            
+            if (status.active) {
+                toggleBtn.textContent = 'ON';
+                toggleBtn.className = 'toggle-btn active pulse';
+                statusEl.textContent = 'Running';
+                statusEl.style.color = '#4CAF50';
+            } else {
+                toggleBtn.textContent = 'OFF';
+                toggleBtn.className = 'toggle-btn inactive';
+                statusEl.textContent = 'Inactive';
+                statusEl.style.color = '#f44336';
+            }
+            
+            counterEl.textContent = status.counter || '0';
+        }
+
+        function showDeleteStatus(message, type = 'info') {
+            const statusEl = document.getElementById('deleteStatus');
+            statusEl.textContent = message;
+            statusEl.className = `delete-status ${type}`;
+            statusEl.style.display = 'block';
+            
+            // Auto hide after 10 seconds for success/error, 5 seconds for info
+            const hideDelay = (type === 'success' || type === 'error') ? 10000 : 5000;
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, hideDelay);
+        }
+
+        // Delete CII Data function
+        async function deleteCiiData() {
+            const deleteBtn = document.getElementById('deleteCiiBtn');
+            const originalContent = deleteBtn.innerHTML;
+            
+            // Show loading state
+            deleteBtn.innerHTML = '<div class="loading"></div> Deleting...';
+            deleteBtn.disabled = true;
+            
+            showDeleteStatus('Deleting daily CII data...', 'info');
+            
+            try {
+                const deleteRes = await fetch('https://api-ais.agus-darmawan.com/api/v1/cii/daily/111111111', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                });
+                
+                console.log('CII Delete response:', deleteRes);
+                
+                if (deleteRes.ok) {
+                    const responseText = await deleteRes.text();
+                    console.log('Delete response body:', responseText);
+                    showDeleteStatus(`✅ Successfully deleted CII data (Status: ${deleteRes.status})`, 'success');
+                } else {
+                    const errorText = await deleteRes.text().catch(() => 'Unknown error');
+                    console.error('Delete failed:', deleteRes.status, errorText);
+                    showDeleteStatus(`❌ Failed to delete CII data (Status: ${deleteRes.status})`, 'error');
+                }
+            } catch (error) {
+                console.error('Network error during CII deletion:', error);
+                showDeleteStatus(`❌ Network error: ${error.message}`, 'error');
+            } finally {
+                // Restore button
+                deleteBtn.innerHTML = originalContent;
+                deleteBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Toggle mode function
+        async function toggleMode(mode) {
+            const toggleBtn = document.getElementById(`${mode}Toggle`);
+            
+            // Show loading state
+            const originalText = toggleBtn.textContent;
+            toggleBtn.innerHTML = '<div class="loading"></div>';
+            toggleBtn.disabled = true;
+            
+            try {
+                // Toggle the mode
+                const response = await fetch(`/api/toggle/${mode}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`${mode} ${data.status}:`, data);
+                    
+                    // Update status after a short delay
+                    setTimeout(updateStatus, 500);
+                } else {
+                    console.error('Failed to toggle mode, status:', response.status);
+                    showError(`Failed to toggle ${mode}. Server responded with status ${response.status}`);
+                    toggleBtn.textContent = originalText;
+                }
+            } catch (error) {
+                console.error('Error toggling mode:', error);
+                showError(`Network error while toggling ${mode}`);
+                toggleBtn.textContent = originalText;
+            } finally {
+                toggleBtn.disabled = false;
+                // Restore button if it still shows loading
+                if (toggleBtn.innerHTML.includes('loading')) {
+                    toggleBtn.textContent = originalText;
+                }
+            }
+        }
+
+        // Initialize and start periodic updates
+        function init() {
+            checkConnection();
+            updateStatus();
+            
+            // Check connection every 5 seconds
+            setInterval(checkConnection, 5000);
+            
+            // Update status every 2 seconds when online
+            setInterval(() => {
+                if (isOnline) {
+                    updateStatus();
+                }
+            }, 2000);
+        }
+
+        // Start when page loads
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Add some interactivity
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (!e.target.classList.contains('toggle-btn') && !e.target.closest('.toggle-btn')) {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

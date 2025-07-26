@@ -1,0 +1,8 @@
+2025-07-27 00:50:36,507 INFO app MainThread : Shutting down gracefully...
+2025-07-27 00:53:09,539 INFO werkzeug MainThread : [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-07-27 00:53:09,539 INFO werkzeug MainThread : [33mPress CTRL+C to quit[0m
+2025-07-27 00:53:12,432 INFO app MainThread : Shutting down gracefully...
+2025-07-27 00:53:58,778 INFO werkzeug MainThread : [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-07-27 00:53:58,778 INFO werkzeug MainThread : [33mPress CTRL+C to quit[0m
